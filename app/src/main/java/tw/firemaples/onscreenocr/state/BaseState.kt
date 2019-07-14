@@ -15,6 +15,10 @@ abstract class BaseState : State {
         logInfo("areaSelected() called")
     }
 
+    override fun textNodeSelected(manager: StateManager) {
+        logInfo("textNodeSelected() called")
+    }
+
     override fun startOCR(manager: StateManager) {
         logInfo("startOCR() called")
     }

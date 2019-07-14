@@ -1,7 +1,5 @@
 package tw.firemaples.onscreenocr.views
 
-import android.content.ClipData
-import android.content.ClipboardManager
 import android.content.Context
 import android.graphics.Rect
 import android.util.DisplayMetrics
@@ -130,13 +128,9 @@ class OCRResultWindow(context: Context) : FrameLayout(context) {
         pbOri.visibility = if (ocrFinished) View.GONE else View.VISIBLE
         pbTranslated.visibility = if (translated) View.GONE else View.VISIBLE
 
-        var oriText: String? = null
-        var translatedText: String? = null
-        if (StateManager.ocrResultList.isNotEmpty()) {
-            val ocrResult = StateManager.ocrResultList[0]
-            oriText = if (ocrFinished) ocrResult.text else null
-            translatedText = if (translated) ocrResult.translatedText else null
-        }
+        val ocrResult = StateManager.resultBox
+        val oriText = if (ocrFinished) ocrResult?.text else null
+        val translatedText = if (translated) ocrResult?.translatedText else null
         tvOriText.text = oriText
         tvTranslated.text = translatedText
 

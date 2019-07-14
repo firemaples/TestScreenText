@@ -1,45 +1,42 @@
 package tw.firemaples.onscreenocr.state
 
-import android.graphics.Rect
 import tw.firemaples.onscreenocr.StateManager
 import tw.firemaples.onscreenocr.StateName
+import tw.firemaples.onscreenocr.floatingviews.ResultBox
 import tw.firemaples.onscreenocr.log.FirebaseEvent
 import tw.firemaples.onscreenocr.ocr.OCRManager
-import tw.firemaples.onscreenocr.ocr.OcrResult
 import tw.firemaples.onscreenocr.translate.TranslationService
 import tw.firemaples.onscreenocr.translate.TranslationUtil
 import tw.firemaples.onscreenocr.utils.SettingUtil
 import tw.firemaples.onscreenocr.utils.Utils
 
 object OCRProcessState : OverlayState() {
-    var manager: StateManager? = null
 
     override fun stateName(): StateName = StateName.OCRProcess
 
     override fun enter(manager: StateManager) {
-        this.manager = manager
 
         manager.dispatchStartOCR()
 
         OCRManager.setListener(callback)
 
-        manager.ocrResultList.clear()
-        for (rect in manager.boxList) {
-            val ocrResult = OcrResult()
-            ocrResult.rect = rect
-            val rectList = ArrayList<Rect>()
-            rectList.add(Rect(0, 0, rect.width(), rect.height()))
-            ocrResult.boxRects = rectList
-            manager.ocrResultList.add(ocrResult)
-        }
 
-        OCRManager.start(manager.screenshotFile!!, manager.boxList)
+        val box = manager.selectedBox
+        val screenshotFile = manager.screenshotFile
+        if (box != null && screenshotFile != null) {
+            manager.resultBox = ResultBox(rect = box)
+
+            OCRManager.start(screenshotFile, box)
+        } else {
+            throw IllegalArgumentException("Selected box or screenshot file not found, " +
+                    "selectedBox: $box, screenshotFile: $screenshotFile")
+        }
     }
 
     val callback = object : OCRManager.OnOCRStateChangedListener {
         override fun onInitializing() {
             FirebaseEvent.logStartOCRInitializing()
-            manager?.dispatchStartOCRInitializing()
+            StateManager.dispatchStartOCRInitializing()
         }
 
         override fun onInitialized() {
@@ -48,33 +45,28 @@ object OCRProcessState : OverlayState() {
 
         override fun onRecognizing() {
             FirebaseEvent.logStartOCR()
-            manager?.dispatchStartOCRRecognizing()
+            StateManager.dispatchStartOCRRecognizing()
         }
 
-        override fun onRecognized(results: List<OcrResult>) {
+        override fun onRecognized(result: ResultBox) {
             FirebaseEvent.logOCRFinished()
-            this@OCRProcessState.onRecognized(results)
+            this@OCRProcessState.onRecognized(result)
         }
     }
 
-    fun onRecognized(results: List<OcrResult>) {
-        manager?.ocrResultList?.apply {
-            clear()
-            addAll(results)
+    fun onRecognized(result: ResultBox) {
+        StateManager.resultBox = result
 
-            if (results.any { !it.text.isNullOrBlank() } && SettingUtil.autoCopyOCRResult) {
-                Utils.copyToClipboard(Utils.LABEL_OCR_RESULT,
-                        results.first { !it.text.isNullOrBlank() }.text)
-            }
+        val text = result.text
+        if (!text.isNullOrBlank() && SettingUtil.autoCopyOCRResult) {
+            Utils.copyToClipboard(Utils.LABEL_OCR_RESULT, text)
+        }
 
-            manager?.apply {
-                dispatchOCRRecognized()
-                if (TranslationUtil.currentService != TranslationService.GoogleTranslatorApp) {
-                    enterState(TranslatingState)
-                } else {
-                    enterState(InitState)
-                }
-            }
+        StateManager.dispatchOCRRecognized()
+        if (TranslationUtil.currentService != TranslationService.GoogleTranslatorApp) {
+            StateManager.enterState(TranslatingState)
+        } else {
+            StateManager.enterState(InitState)
         }
     }
 }

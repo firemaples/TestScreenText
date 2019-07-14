@@ -27,7 +27,7 @@ object RemoteConfigUtil {
 
     private val remoteConfig: FirebaseRemoteConfig by lazy {
         val config = FirebaseRemoteConfig.getInstance()
-        config.setConfigSettings(FirebaseRemoteConfigSettings.Builder()
+        config.setConfigSettingsAsync(FirebaseRemoteConfigSettings.Builder()
                 .setDeveloperModeEnabled(BuildConfig.DEBUG).build())
         config.setDefaults(R.xml.remote_config_defaults)
 
@@ -41,7 +41,7 @@ object RemoteConfigUtil {
         logger.info("Version before fetch: $versionString, keyGroup: $microsoftTranslationKeyGroupId")
         remoteConfig.fetch(fetchInterval).addOnSuccessListener {
             logger.info("Remote config fetch successfully")
-            remoteConfig.activateFetched()
+            remoteConfig.activate()
 
             logger.info("Version after fetch: $versionString, keyGroup: $microsoftTranslationKeyGroupId")
         }.addOnFailureListener {

@@ -16,11 +16,16 @@ class SelectionGestureAdapter(view: View, val callback: OnGesture) {
     private val onTouchListener = View.OnTouchListener { _, event ->
         if (event.action == MotionEvent.ACTION_DOWN && event.pointerCount <= 2) {
             initTouch()
+            if (event.pointerCount == 1) {
+                handleOneFingerTouch(event)
+            }
             return@OnTouchListener true
         } else if (event.action == MotionEvent.ACTION_UP) {
             if (isOneFinger) {
-                endPlaceForOne?.also { endPlace ->
-                    firstPlaceForOne?.also { firstPlace ->
+                val endPlace = endPlaceForOne
+                val firstPlace = firstPlaceForOne
+                if (firstPlace != null) {
+                    if (endPlace != null) {
                         logger.debug("onAreaCreationFinish()")
                         callback.onAreaCreationFinish(firstPlace, endPlace)
                     }
@@ -28,6 +33,11 @@ class SelectionGestureAdapter(view: View, val callback: OnGesture) {
             } else if (isTwoFingers) {
                 logger.debug("onAreaResizeFinish()")
                 callback.onAreaResizeFinish()
+            } else {
+                firstPlaceForOne?.also { firstPlace ->
+                    logger.debug("onOneFingerTap()")
+                    callback.onOneFingerTap(firstPlace)
+                }
             }
             initTouch()
             return@OnTouchListener true
@@ -81,13 +91,14 @@ class SelectionGestureAdapter(view: View, val callback: OnGesture) {
 
         val point = Point(event.x.toInt(), event.y.toInt())
         when (event.action) {
-            MotionEvent.ACTION_MOVE -> {
+            MotionEvent.ACTION_DOWN -> {
                 if (firstPlaceForOne == null) {
                     logger.debug("1 finger first place")
                     firstPlaceForOne = point
                     return true
                 }
-
+            }
+            MotionEvent.ACTION_MOVE -> {
                 firstPlaceForOne?.also { firstPlace ->
                     if (isOneFinger || overThreshold(point, firstPlace)) {
                         if (!isOneFinger) {
@@ -186,6 +197,7 @@ class SelectionGestureAdapter(view: View, val callback: OnGesture) {
 }
 
 interface OnGesture {
+    fun onOneFingerTap(point: Point)
     fun onAreaCreationStart(startPoint: Point)
     fun onAreaCreationDragging(endPoint: Point)
     fun onAreaCreationFinish(startPoint: Point, endPoint: Point)

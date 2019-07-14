@@ -11,6 +11,7 @@ import org.greenrobot.eventbus.ThreadMode
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import tw.firemaples.onscreenocr.*
+import tw.firemaples.onscreenocr.detect.TextNode
 import tw.firemaples.onscreenocr.event.EventUtil
 import tw.firemaples.onscreenocr.floatingviews.FloatingView
 import tw.firemaples.onscreenocr.floatingviews.MovableFloatingView
@@ -29,9 +30,7 @@ import tw.firemaples.onscreenocr.translate.event.InstallGoogleTranslatorEvent
 import tw.firemaples.onscreenocr.translate.event.TranslationLangChangedEvent
 import tw.firemaples.onscreenocr.translate.event.TranslationServiceChangedEvent
 import tw.firemaples.onscreenocr.utils.*
-import tw.firemaples.onscreenocr.views.AreaSelectionView
 import tw.firemaples.onscreenocr.views.MenuView
-import tw.firemaples.onscreenocr.views.OnAreaSelectionViewCallback
 import java.util.*
 
 class MainBar(context: Context) : MovableFloatingView(context), RealButtonHandler {
@@ -162,9 +161,6 @@ class MainBar(context: Context) : MovableFloatingView(context), RealButtonHandle
         }
         fun doTranslation() {
             FirebaseEvent.logClickTranslationStartButton()
-            if (SettingUtil.isRememberLastSelection) {
-                SettingUtil.lastSelectionArea = StateManager.boxList
-            }
             if (TranslationUtil.currentService == TranslationService.GoogleTranslatorApp &&
                     !GoogleTranslateUtil.checkInstalled(context)) {
                 return
@@ -281,13 +277,17 @@ class MainBar(context: Context) : MovableFloatingView(context), RealButtonHandle
 
                     drawAreaView = DrawAreaView(context).apply {
                         setRealButtonHandler(this@MainBar)
-
-                        areaSelectionView.callback = object : OnAreaSelectionViewCallback {
-                            override fun onAreaSelected(areaSelectionView: AreaSelectionView) {
-                                areaSelectionView.getBoxList().let {
-                                    StateManager.areaSelected(it)
-                                }
+                        callback = object : OnDrawAreaCallback {
+                            override fun onTextNodeClicked(node: TextNode) {
+                                logger.debug("onTextNodeClicked(), node: $node")
+                                StateManager.textNodeSelected(node)
                             }
+
+                            override fun onAreaSelected(selectedArea: Rect) {
+                                logger.debug("onAreaSelected(), selectArea: $selectedArea")
+                                StateManager.areaSelected(selectedArea)
+                            }
+
                         }
 
                         attachToWindow()
@@ -360,7 +360,7 @@ class MainBar(context: Context) : MovableFloatingView(context), RealButtonHandle
 
             override fun ocrRecognized() {
                 if (TranslationUtil.currentService == TranslationService.GoogleTranslatorApp) {
-                    StateManager.ocrResultText?.let { textToTranslate ->
+                    StateManager.resultBox?.text?.also { textToTranslate ->
                         FirebaseEvent.logStartTranslationText(textToTranslate, "",
                                 TranslationService.GoogleTranslatorApp)
                         GoogleTranslateUtil.start(context, Locale.getDefault().language,

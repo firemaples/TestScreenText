@@ -1,8 +1,15 @@
 package tw.firemaples.onscreenocr.floatingviews.screencrop
 
 import android.content.Context
+import android.graphics.Rect
 import android.view.WindowManager
+import org.greenrobot.eventbus.Subscribe
+import org.greenrobot.eventbus.ThreadMode
 import tw.firemaples.onscreenocr.R
+import tw.firemaples.onscreenocr.detect.TextNode
+import tw.firemaples.onscreenocr.event.EventUtil
+import tw.firemaples.onscreenocr.event.events.RetrieveTextNodes
+import tw.firemaples.onscreenocr.event.events.TextNodesRetrieved
 import tw.firemaples.onscreenocr.floatingviews.FloatingView
 import tw.firemaples.onscreenocr.utils.SettingUtil
 import tw.firemaples.onscreenocr.views.AreaSelectionView
@@ -24,6 +31,9 @@ class DrawAreaView(context: Context) : FloatingView(context) {
         areaSelectionView.helpTextView = helpTextView
     }
 
+    private val textNodes = mutableListOf<TextNode>()
+    public var callback: OnDrawAreaCallback? = null
+
     override fun getLayoutId(): Int = R.layout.view_draw_area
 
     override fun fullScreenMode(): Boolean = true
@@ -34,18 +44,47 @@ class DrawAreaView(context: Context) : FloatingView(context) {
         super.attachToWindow()
         progressBorderView.start()
 
-        if (SettingUtil.isRememberLastSelection) {
-            areaSelectionView.setBoxList(SettingUtil.lastSelectionArea)
+        areaSelectionView.callback = object : OnAreaSelectionViewCallback {
+            override fun onFixedAreaTapped(rect: Rect) {
+                textNodes.firstOrNull { it.bound == rect }?.also {
+                    callback?.onTextNodeClicked(it)
+                }
+            }
+
+            override fun onAreaSelected(rect: Rect) {
+                callback?.onAreaSelected(rect)
+            }
+
         }
+
+        if (SettingUtil.isRememberLastSelection) {
+            areaSelectionView.setSelectedBox(SettingUtil.lastSelectedArea)
+        }
+
+        EventUtil.register(this)
+        EventUtil.post(RetrieveTextNodes())
     }
 
     override fun detachFromWindow() {
+        EventUtil.unregister(this)
+        areaSelectionView.callback = null
         areaSelectionView.clear()
         progressBorderView.stop()
         super.detachFromWindow()
     }
 
-    fun setCallback(callback: OnAreaSelectionViewCallback) {
-        areaSelectionView.callback = callback
+    @Suppress("unused")
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    fun onTextNodesRetrieved(event: TextNodesRetrieved) {
+        if (isAttached) {
+            textNodes.clear()
+            textNodes.addAll(event.textNodes)
+            areaSelectionView.setFixedBoxList(event.textNodes.map { it.bound })
+        }
     }
+}
+
+interface OnDrawAreaCallback {
+    fun onTextNodeClicked(node: TextNode)
+    fun onAreaSelected(selectedArea: Rect)
 }

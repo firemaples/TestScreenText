@@ -1,10 +1,7 @@
 package tw.firemaples.onscreenocr.views
 
 import android.content.Context
-import android.graphics.Canvas
-import android.graphics.Paint
-import android.graphics.Point
-import android.graphics.Rect
+import android.graphics.*
 import android.support.v4.content.ContextCompat
 import android.support.v7.widget.AppCompatImageView
 import android.util.AttributeSet
@@ -24,7 +21,8 @@ class AreaSelectionView(context: Context, attrs: AttributeSet) : AppCompatImageV
     private var drawingStartPoint: Point? = null
     private var drawingEndPoint: Point? = null
 
-    var box: Rect? = null
+    var selectBox: Rect? = null
+    val fixedBoxList = mutableListOf<Rect>()
     var resizeBase: Rect = Rect()
 
     private var drawingLinePaint = Paint().apply {
@@ -39,16 +37,29 @@ class AreaSelectionView(context: Context, attrs: AttributeSet) : AppCompatImageV
         strokeWidth = 6f
         style = Paint.Style.STROKE
     }
+    private var fixedBoxPaint = Paint().apply {
+        isAntiAlias = true
+        color = ContextCompat.getColor(context, R.color.captureAreaSelectionViewPaint_fixedBoxPaint)
+        strokeWidth = 6f
+        style = Paint.Style.STROKE
+        pathEffect = DashPathEffect(floatArrayOf(10f, 20f), 0f)
+    }
 
     var helpTextView: FadeOutHelpTextView? = null
 
     var callback: OnAreaSelectionViewCallback? = null
 
     private val onGesture = object : OnGesture {
+        override fun onOneFingerTap(point: Point) {
+            fixedBoxList.firstOrNull { it.contains(point.x, point.y) }?.also {
+                callback?.onFixedAreaTapped(it)
+            }
+        }
+
         override fun onAreaCreationStart(startPoint: Point) {
             FirebaseEvent.logDragSelectionArea()
 
-            box = null
+            selectBox = null
             helpTextView?.hasBox = false
 
             drawingStartPoint = startPoint
@@ -61,7 +72,8 @@ class AreaSelectionView(context: Context, attrs: AttributeSet) : AppCompatImageV
         }
 
         override fun onAreaCreationFinish(startPoint: Point, endPoint: Point) {
-            box = createNewBox(startPoint, endPoint)
+            val box = createNewBox(startPoint, endPoint)
+            this@AreaSelectionView.selectBox = box
             helpTextView?.hasBox = true
             drawingStartPoint = null
             drawingEndPoint = null
@@ -70,19 +82,19 @@ class AreaSelectionView(context: Context, attrs: AttributeSet) : AppCompatImageV
 
             helpTextView?.isDrawing = false
             helpTextView?.startAnim()
-            callback?.onAreaSelected(this@AreaSelectionView)
+            callback?.onAreaSelected(box)
         }
 
         override fun onAreaResizeStart() {
             FirebaseEvent.logResizeSelectionArea()
 
-            box?.also {
+            selectBox?.also {
                 resizeBase = Rect(it)
             }
         }
 
         override fun onAreaResizing(leftDiff: Int, rightDiff: Int, topDiff: Int, bottomDiff: Int) {
-            box?.apply {
+            selectBox?.apply {
                 left = resizeBase.left + leftDiff
                 right = Math.max(left + 1, resizeBase.right + rightDiff)
                 top = resizeBase.top + topDiff
@@ -96,7 +108,9 @@ class AreaSelectionView(context: Context, attrs: AttributeSet) : AppCompatImageV
         override fun onAreaResizeFinish() {
             helpTextView?.isDrawing = false
             helpTextView?.startAnim()
-            callback?.onAreaSelected(this@AreaSelectionView)
+            selectBox?.also {
+                callback?.onAreaSelected(it)
+            }
         }
     }
 
@@ -112,25 +126,31 @@ class AreaSelectionView(context: Context, attrs: AttributeSet) : AppCompatImageV
         helpTextView = null
     }
 
-    fun getBoxList(): List<Rect> = box?.let { listOf(Rect(it)) } ?: listOf()
-
     fun clear() {
         drawingEndPoint = null
         drawingStartPoint = drawingEndPoint
-        box = null
+        selectBox = null
+        fixedBoxList.clear()
         invalidate()
     }
 
-    fun setBoxList(boxList: List<Rect>) {
-        if (boxList.isEmpty()) {
-            box = null
+    fun setSelectedBox(box: Rect?) {
+        if (box == null) {
+            selectBox = null
             helpTextView?.hasBox = false
         } else {
-            box = boxList[0]
+            selectBox = box
             helpTextView?.hasBox = true
             helpTextView?.startAnim()
-            callback?.onAreaSelected(this)
+            callback?.onAreaSelected(box)
         }
+
+        invalidate()
+    }
+
+    fun setFixedBoxList(boxList: List<Rect>) {
+        fixedBoxList.clear()
+        fixedBoxList.addAll(boxList)
 
         invalidate()
     }
@@ -154,13 +174,17 @@ class AreaSelectionView(context: Context, attrs: AttributeSet) : AppCompatImageV
         if (!isInEditMode) {
             canvas.save()
 
+            fixedBoxList.forEach {
+                canvas.drawRect(it, fixedBoxPaint)
+            }
+
             val drawingStartPoint = this.drawingStartPoint
             val drawingEndPoint = this.drawingEndPoint
             if (drawingStartPoint != null && drawingEndPoint != null) {
                 canvas.drawRect(createNewBox(drawingStartPoint, drawingEndPoint), drawingLinePaint)
             }
 
-            box?.also {
+            selectBox?.also {
                 canvas.drawRect(it, boxPaint)
             }
 
@@ -170,5 +194,6 @@ class AreaSelectionView(context: Context, attrs: AttributeSet) : AppCompatImageV
 }
 
 interface OnAreaSelectionViewCallback {
-    fun onAreaSelected(areaSelectionView: AreaSelectionView)
+    fun onFixedAreaTapped(rect: Rect)
+    fun onAreaSelected(rect: Rect)
 }

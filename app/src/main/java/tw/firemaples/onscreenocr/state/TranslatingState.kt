@@ -14,12 +14,13 @@ object TranslatingState : OverlayState() {
 
     override fun enter(manager: StateManager) {
         manager.dispatchStartTranslation()
-        if (manager.ocrResultList.isEmpty() || manager.ocrResultText.isNullOrBlank()) {
+        val originText = manager.resultBox?.text
+        if (originText.isNullOrBlank()) {
             onTranslated(manager, "")
         } else {
             service = TranslationUtil.currentService
 
-            TranslationManager.startTranslation(manager.ocrResultText ?: "",
+            TranslationManager.startTranslation(originText,
                     TranslationUtil.currentTranslationLangCode) { isSuccess, result, throwable ->
                 if (isSuccess) {
                     onTranslated(manager, result)
@@ -32,7 +33,7 @@ object TranslatingState : OverlayState() {
 
     private fun onTranslated(manager: StateManager, text: String) {
         FirebaseEvent.logTranslationTextFinished(service)
-        manager.translatedText = text
+        manager.resultBox?.translatedText = text
         manager.dispatchOnTranslated()
         manager.enterState(TranslatedState)
     }
@@ -40,7 +41,7 @@ object TranslatingState : OverlayState() {
     private fun onTranslationFailed(manager: StateManager, t: Throwable?) {
         FirebaseEvent.logTranslationTextFailed(service)
         t?.also { FirebaseEvent.logException(t) }
-        manager.translatedText = ""
+        manager.resultBox?.translatedText = ""
         manager.dispatchTranslationFailed(t)
         manager.enterState(TranslatedState)
     }

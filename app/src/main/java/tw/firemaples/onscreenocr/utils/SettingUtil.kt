@@ -24,7 +24,7 @@ object SettingUtil {
     private const val KEY_READ_SPEED_ENABLE = "KEY_READ_SPEED_ENABLE"
     private const val KEY_READ_SPEED = "KEY_READ_SPEED"
     private const val KEY_REMEMBER_LAST_SELECTION = "KEY_REMEMBER_LAST_SELECTION"
-    private const val KEY_LAST_SELECTION_AREA = "KEY_LAST_SELECTION_AREA"
+    private const val KEY_LAST_SELECTED_AREA = "KEY_LAST_SELECTED_AREA"
     private const val KEY_VERSION_HISTORY_SHOWN_VERSION = "KEY_VERSION_HISTORY_SHOWN_VERSION"
     private const val KEY_HOW_TO_USE_SHOWN_VERSION = "KEY_HOW_TO_USE_SHOWN_VERSION"
     private const val KEY_LAST_MAIN_BAR_POSITION_X = "KEY_LAST_MAIN_BAR_POSITION_X"
@@ -125,17 +125,17 @@ object SettingUtil {
             sp.edit().putBoolean(KEY_REMEMBER_LAST_SELECTION, value).apply()
         }
 
-    var lastSelectionArea: List<Rect>
+    var lastSelectedArea: Rect?
         get() {
-            return sp.getString(KEY_LAST_SELECTION_AREA, null)?.let {
-                JsonUtil<List<Rect>>().parseJson(it, object : TypeReference<List<Rect>>() {
+            return sp.getString(KEY_LAST_SELECTED_AREA, null)?.let {
+                JsonUtil<Rect>().parseJson(it, object : TypeReference<Rect>() {
 
                 })
-            } ?: ArrayList()
+            }
         }
         set(value) {
-            JsonUtil<List<Rect>>().writeJson(value).let {
-                sp.edit().putString(KEY_LAST_SELECTION_AREA, it).apply()
+            JsonUtil<Rect>().writeJson(value).let {
+                sp.edit().putString(KEY_LAST_SELECTED_AREA, it).apply()
             }
         }
 

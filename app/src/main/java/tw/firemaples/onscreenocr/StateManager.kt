@@ -1,24 +1,23 @@
 package tw.firemaples.onscreenocr
 
-import android.graphics.Bitmap
 import android.graphics.Rect
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import tw.firemaples.onscreenocr.detect.TextNode
 import tw.firemaples.onscreenocr.event.EventUtil
+import tw.firemaples.onscreenocr.floatingviews.ResultBox
 import tw.firemaples.onscreenocr.ocr.OCRLangUtil
-import tw.firemaples.onscreenocr.ocr.OcrResult
 import tw.firemaples.onscreenocr.state.InitState
 import tw.firemaples.onscreenocr.state.State
 import tw.firemaples.onscreenocr.state.event.StateChangedEvent
 import tw.firemaples.onscreenocr.translate.TranslationService
 import tw.firemaples.onscreenocr.translate.TranslationUtil
 import tw.firemaples.onscreenocr.utils.ImageFile
+import tw.firemaples.onscreenocr.utils.SettingUtil
 import tw.firemaples.onscreenocr.utils.stateManagerAction
 import tw.firemaples.onscreenocr.utils.threadUI
-import java.io.File
-import java.util.*
 
 object StateManager {
     var logger: Logger = LoggerFactory.getLogger(StateManager::class.java)
@@ -27,19 +26,19 @@ object StateManager {
 
     var listener: OnStateChangedListener? = null
 
-    var boxList: MutableList<Rect> = arrayListOf()
+    var selectedBox: Rect? = null
     var screenshotFile: ImageFile? = null
-    var ocrResultList: MutableList<OcrResult> = ArrayList()
-    var ocrResultText: String?
-        get() = if (ocrResultList.isNotEmpty()) ocrResultList.first().text else null
-        set(value) {
-            if (ocrResultList.isNotEmpty()) ocrResultList.first().text = value
-        }
-    var translatedText: String?
-        get() = if (ocrResultList.isNotEmpty()) ocrResultList.first().translatedText else null
-        set(value) {
-            if (ocrResultList.isNotEmpty()) ocrResultList.first().translatedText = value
-        }
+    var resultBox: ResultBox? = null
+    //    var ocrResultText: String?
+//        get() = if (ocrResultList.isNotEmpty()) ocrResultList.first().text else null
+//        set(value) {
+//            if (ocrResultList.isNotEmpty()) ocrResultList.first().text = value
+//        }
+//    var translatedText: String?
+//        get() = if (ocrResultList.isNotEmpty()) ocrResultList.first().translatedText else null
+//        set(value) {
+//            if (ocrResultList.isNotEmpty()) ocrResultList.first().translatedText = value
+//        }
     var cachedOCRLangCode: String? = null
     var cachedTranslateService: TranslationService? = null
     var cachedTranslationLangCode: String? = null
@@ -49,9 +48,8 @@ object StateManager {
     }
 
     fun clear() {
-        boxList.clear()
         screenshotFile = null
-        ocrResultList.clear()
+        resultBox = null
     }
 
     fun enterState(nextState: State) {
@@ -75,9 +73,17 @@ object StateManager {
         state.startSelection(this@StateManager)
     }
 
-    fun areaSelected(boxList: List<Rect>) = doAction {
-        this@StateManager.boxList = boxList.toMutableList()
+    fun areaSelected(selectedBox: Rect) = doAction {
+        this.resultBox = ResultBox(rect = selectedBox)
+        if (SettingUtil.isRememberLastSelection) {
+            SettingUtil.lastSelectedArea = selectedBox
+        }
         state.areaSelected(this@StateManager)
+    }
+
+    fun textNodeSelected(node: TextNode) {
+        this.resultBox = ResultBox(rect = node.bound, text = node.text)
+        state.textNodeSelected(this@StateManager)
     }
 
     fun startOCR() = doAction {
@@ -85,7 +91,7 @@ object StateManager {
     }
 
     fun changeOCRText(newText: String) = doAction {
-        ocrResultText = newText
+        resultBox?.text = newText
         state.changeOCRText(this@StateManager)
     }
 
@@ -126,7 +132,7 @@ object StateManager {
     }
 
     fun dispatchStartOCRInitializing() = dispatch {
-//        ocrResultList.clear()
+        //        ocrResultList.clear()
 //        for (rect in boxList) {
 //            val ocrResult = OcrResult()
 //            ocrResult.rect = rect

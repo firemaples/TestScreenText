@@ -14,7 +14,7 @@ import tw.firemaples.onscreenocr.R
 import tw.firemaples.onscreenocr.StateManager
 import tw.firemaples.onscreenocr.event.EventUtil
 import tw.firemaples.onscreenocr.floatingviews.FloatingView
-import tw.firemaples.onscreenocr.ocr.OcrResult
+import tw.firemaples.onscreenocr.floatingviews.ResultBox
 import tw.firemaples.onscreenocr.state.OCRProcessState
 import tw.firemaples.onscreenocr.state.TranslatedState
 import tw.firemaples.onscreenocr.state.TranslatingState
@@ -72,9 +72,9 @@ class OCRResultView(context: Context) : FloatingView(context) {
             }
 
             TranslatingState -> {
-                val ocrResult = StateManager.ocrResultList.first()
-                drawResultCovers(ocrResult)
-                showResultWindow(ocrResult)
+                val resultBox = StateManager.resultBox
+                drawResultCovers(resultBox)
+                showResultWindow(resultBox)
             }
 
             TranslatedState -> {
@@ -87,11 +87,11 @@ class OCRResultView(context: Context) : FloatingView(context) {
         }
     }
 
-    private fun drawResultCovers(ocrResult: OcrResult) {
+    private fun drawResultCovers(resultBox: ResultBox?) {
         clearResultCovers()
 
-        val parentRect = ocrResult.rect
-        ocrResult.boxRects.forEach { rect ->
+        val parentRect = resultBox?.rect ?: return
+        resultBox.boxRects.forEach { rect ->
             val ivCover = ImageView(context)
             val layoutParams = RelativeLayout.LayoutParams(rect.width(), rect.height())
             layoutParams.setMargins(parentRect.left + rect.left, parentRect.top + rect.top, 0, 0)
@@ -111,13 +111,13 @@ class OCRResultView(context: Context) : FloatingView(context) {
         resultCovers.clear()
     }
 
-    private fun showResultWindow(ocrResult: OcrResult) {
-        val parentRect = ocrResult.rect
+    private fun showResultWindow(resultBox: ResultBox?) {
+        val parentRect = resultBox?.rect ?: return
         val layoutParams = RelativeLayout.LayoutParams(parentRect.width(), parentRect.height())
         layoutParams.setMargins(parentRect.left, parentRect.top, 0, 0)
         ivDebugImage.layoutParams = layoutParams
 
-        val bitmap = ocrResult.debugInfo?.croppedBitmap
+        val bitmap = resultBox.debugInfo?.croppedBitmap
         if (SettingUtil.isDebugMode && bitmap != null) {
             ivDebugImage.setImageBitmap(bitmap)
         } else {

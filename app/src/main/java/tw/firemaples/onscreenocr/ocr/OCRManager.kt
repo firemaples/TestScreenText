@@ -1,29 +1,30 @@
 package tw.firemaples.onscreenocr.ocr
 
-import android.graphics.Bitmap
+import android.content.Context
 import android.graphics.Rect
 import android.os.AsyncTask
 import com.googlecode.tesseract.android.TessBaseAPI
+import tw.firemaples.onscreenocr.CoreApplication
+import tw.firemaples.onscreenocr.floatingviews.ResultBox
 import tw.firemaples.onscreenocr.utils.ImageFile
-import tw.firemaples.onscreenocr.utils.Utils.Companion.context
-import java.io.File
 
 object OCRManager {
+    val context: Context by lazy { CoreApplication.instance }
     val tessBaseAPI: TessBaseAPI by lazy { TessBaseAPI() }
 
     private var callback: OnOCRStateChangedListener? = null
     private var lastAsyncTask: AsyncTask<*, *, *>? = null
 
     private var currentScreenshot: ImageFile? = null
-    private var boxList: List<Rect>? = null
+    private var box: Rect? = null
 
     fun setListener(callback: OnOCRStateChangedListener) {
         this.callback = callback
     }
 
-    fun start(screenshot: ImageFile, boxList: List<Rect>) {
+    fun start(screenshot: ImageFile, box: Rect) {
         this.currentScreenshot = screenshot
-        this.boxList = boxList
+        this.box = box
 
         initOcrEngine()
     }
@@ -55,14 +56,14 @@ object OCRManager {
 
         lastAsyncTask = OcrRecognizeAsyncTask(context,
                 currentScreenshot,
-                boxList,
+                box,
                 onTextRecognizeAsyncTaskCallback).execute()
     }
 
     private val onTextRecognizeAsyncTaskCallback = object :
             OcrRecognizeAsyncTask.OnTextRecognizeAsyncTaskCallback {
-        override fun onTextRecognizeFinished(results: List<OcrResult>) {
-            callback?.onRecognized(results)
+        override fun onTextRecognizeFinished(result: ResultBox) {
+            callback?.onRecognized(result)
         }
 
         override fun showMessage(message: String) {}
@@ -78,6 +79,6 @@ object OCRManager {
 
         fun onRecognizing()
 
-        fun onRecognized(results: List<OcrResult>)
+        fun onRecognized(result: ResultBox)
     }
 }

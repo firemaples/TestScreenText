@@ -15,12 +15,12 @@ import com.googlecode.tesseract.android.TessBaseAPI;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
+import java.lang.ref.WeakReference;
 import java.util.Locale;
 
 import tw.firemaples.onscreenocr.R;
+import tw.firemaples.onscreenocr.floatingviews.DebugInfo;
+import tw.firemaples.onscreenocr.floatingviews.ResultBox;
 import tw.firemaples.onscreenocr.utils.ImageFile;
 import tw.firemaples.onscreenocr.utils.SettingUtil;
 import tw.firemaples.onscreenocr.utils.Utils;
@@ -28,22 +28,22 @@ import tw.firemaples.onscreenocr.utils.Utils;
 /**
  * Created by firemaples on 2016/3/2.
  */
-public class OcrRecognizeAsyncTask extends AsyncTask<Void, String, List<OcrResult>> {
+public class OcrRecognizeAsyncTask extends AsyncTask<Void, String, ResultBox> {
     private static final Logger logger = LoggerFactory.getLogger(OcrRecognizeAsyncTask.class);
 
-    private final Context context;
+    private final WeakReference<Context> contextRef;
     private final TessBaseAPI baseAPI;
     private ImageFile screenshot;
-    private final List<Rect> boxList;
+    private final Rect box;
 
     private static final int textMargin = 10;
 
     private OnTextRecognizeAsyncTaskCallback callback;
 
-    public OcrRecognizeAsyncTask(Context context, ImageFile screenshot, List<Rect> boxList, OnTextRecognizeAsyncTaskCallback callback) {
-        this.context = context;
+    public OcrRecognizeAsyncTask(Context context, ImageFile screenshot, Rect box, OnTextRecognizeAsyncTaskCallback callback) {
+        this.contextRef = new WeakReference<>(context);
         this.screenshot = screenshot;
-        this.boxList = boxList;
+        this.box = box;
         this.callback = callback;
 
         this.baseAPI = OCRManager.INSTANCE.getTessBaseAPI();
@@ -52,7 +52,7 @@ public class OcrRecognizeAsyncTask extends AsyncTask<Void, String, List<OcrResul
     @Override
     protected void onPreExecute() {
         super.onPreExecute();
-        onProgressUpdate(context.getString(R.string.progress_textRecognizing));
+        onProgressUpdate(contextRef.get().getString(R.string.progress_textRecognizing));
 
         if (callback == null) {
             throw new UnsupportedOperationException("Callback is not implemented");
@@ -60,57 +60,53 @@ public class OcrRecognizeAsyncTask extends AsyncTask<Void, String, List<OcrResul
     }
 
     @Override
-    protected List<OcrResult> doInBackground(Void... params) {
+    protected ResultBox doInBackground(Void... params) {
         baseAPI.setImage(ReadFile.readFile(screenshot.getFile()));
 
-        WindowManager wm = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
+        WindowManager wm = (WindowManager) contextRef.get().getSystemService(Context.WINDOW_SERVICE);
         Display display = wm.getDefaultDisplay();
         DisplayMetrics metrics = new DisplayMetrics();
         display.getMetrics(metrics);
 
-        List<OcrResult> ocrResultList = new ArrayList<>();
-        for (Rect rect : boxList) {
-            //Try to fix sides of rect
-            fixRect(rect, screenshot.getWidth(), screenshot.getHeight());
+        ResultBox resultBox = new ResultBox();
 
-            baseAPI.setRectangle(rect);
-            OcrResult ocrResult = new OcrResult();
-            ocrResult.setRect(rect);
-            String resultText = baseAPI.getUTF8Text();
-            if (SettingUtil.INSTANCE.getRemoveLineBreaks()) {
-                resultText = Utils.replaceAllLineBreaks(resultText, " ");
-            }
-            ocrResult.setText(resultText);
-            ocrResult.setBoxRects(baseAPI.getRegions().getBoxRects());
-            ocrResult.setResultIterator(baseAPI.getResultIterator());
+        //Try to fix sides of rect
+        fixRect(box, screenshot.getWidth(), screenshot.getHeight());
 
-            if (ocrResult.getBoxRects().size() > 0) {
-                Rect boxRect = ocrResult.getBoxRects().get(0);
+        baseAPI.setRectangle(box);
+        resultBox.setRect(box);
+        String resultText = baseAPI.getUTF8Text();
+        if (SettingUtil.INSTANCE.getRemoveLineBreaks()) {
+            resultText = Utils.replaceAllLineBreaks(resultText, " ");
+        }
+        resultBox.setText(resultText);
+        resultBox.setBoxRects(baseAPI.getRegions().getBoxRects());
+        resultBox.setResultIterator(baseAPI.getResultIterator());
 
-                Rect subRect = new Rect(rect.left + boxRect.left - textMargin,
-                        rect.top + boxRect.top - textMargin,
-                        rect.left + boxRect.right + textMargin,
-                        rect.top + boxRect.bottom + textMargin);
-                ocrResult.setSubRect(subRect);
-            }
+        if (resultBox.getBoxRects().size() > 0) {
+            Rect boxRect = resultBox.getBoxRects().get(0);
 
-            if (SettingUtil.INSTANCE.isDebugMode()) {
-                OcrResult.DebugInfo debugInfo = new OcrResult.DebugInfo();
-                Bitmap fullBitmap = BitmapFactory.decodeFile(screenshot.getFile().getAbsolutePath());
-                Bitmap cropped = Bitmap.createBitmap(fullBitmap, rect.left, rect.top, rect.width(), rect.height());
-                fullBitmap.recycle();
-                debugInfo.setCroppedBitmap(cropped);
-                debugInfo.addInfoString(String.format(Locale.getDefault(), "Screen size:%dx%d", metrics.widthPixels, metrics.heightPixels));
-                debugInfo.addInfoString(String.format(Locale.getDefault(), "Screenshot size:%dx%d", screenshot.getWidth(), screenshot.getHeight()));
-                debugInfo.addInfoString(String.format(Locale.getDefault(), "Cropped position:%s", rect.toString()));
-                debugInfo.addInfoString(String.format(Locale.getDefault(), "OCR result:%s", ocrResult.getText()));
-                ocrResult.setDebugInfo(debugInfo);
-            }
-
-            ocrResultList.add(ocrResult);
+            Rect subRect = new Rect(box.left + boxRect.left - textMargin,
+                    box.top + boxRect.top - textMargin,
+                    box.left + boxRect.right + textMargin,
+                    box.top + boxRect.bottom + textMargin);
+            resultBox.setSubRect(subRect);
         }
 
-        return ocrResultList;
+        if (SettingUtil.INSTANCE.isDebugMode()) {
+            DebugInfo debugInfo = new DebugInfo();
+            Bitmap fullBitmap = BitmapFactory.decodeFile(screenshot.getFile().getAbsolutePath());
+            Bitmap cropped = Bitmap.createBitmap(fullBitmap, box.left, box.top, box.width(), box.height());
+            fullBitmap.recycle();
+            debugInfo.setCroppedBitmap(cropped);
+            debugInfo.addInfoString(String.format(Locale.getDefault(), "Screen size:%dx%d", metrics.widthPixels, metrics.heightPixels));
+            debugInfo.addInfoString(String.format(Locale.getDefault(), "Screenshot size:%dx%d", screenshot.getWidth(), screenshot.getHeight()));
+            debugInfo.addInfoString(String.format(Locale.getDefault(), "Cropped position:%s", box.toString()));
+            debugInfo.addInfoString(String.format(Locale.getDefault(), "OCR result:%s", resultBox.getText()));
+            resultBox.setDebugInfo(debugInfo);
+        }
+
+        return resultBox;
     }
 
     @Override
@@ -122,18 +118,12 @@ public class OcrRecognizeAsyncTask extends AsyncTask<Void, String, List<OcrResul
     }
 
     @Override
-    protected void onPostExecute(List<OcrResult> results) {
-        super.onPostExecute(results);
-        logger.info("OCR result size:" + results.size());
-        if (results.size() > 0) {
-            logger.info("First OCR result:" + results.get(0).getText());
-        } else {
-            logger.info("No OCR result found");
-            Utils.showErrorToast(context.getString(R.string.error_noOCRResultFound));
-        }
+    protected void onPostExecute(ResultBox result) {
+        super.onPostExecute(result);
+        logger.info("OCR result:" + result.getText());
         if (callback != null) {
             callback.hideMessage();
-            callback.onTextRecognizeFinished(results);
+            callback.onTextRecognizeFinished(result);
         }
     }
 
@@ -153,7 +143,7 @@ public class OcrRecognizeAsyncTask extends AsyncTask<Void, String, List<OcrResul
     }
 
     public interface OnTextRecognizeAsyncTaskCallback {
-        void onTextRecognizeFinished(List<OcrResult> results);
+        void onTextRecognizeFinished(ResultBox resultBox);
 
         void showMessage(String message);
 

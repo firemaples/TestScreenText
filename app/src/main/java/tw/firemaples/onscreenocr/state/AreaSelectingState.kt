@@ -14,4 +14,9 @@ object AreaSelectingState : OverlayState() {
         super.areaSelected(manager)
         manager.enterState(AreaSelectedState)
     }
+
+    override fun textNodeSelected(manager: StateManager) {
+        super.textNodeSelected(manager)
+        manager.enterState(TranslatingState)
+    }
 }

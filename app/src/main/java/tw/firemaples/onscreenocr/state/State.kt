@@ -12,6 +12,8 @@ interface State {
 
     fun areaSelected(manager: StateManager)
 
+    fun textNodeSelected(manager: StateManager)
+
     fun startOCR(manager: StateManager)
 
     fun startTranslation(manager: StateManager)
