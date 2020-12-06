@@ -98,4 +98,14 @@
         <item name="layout_constraintHorizontal_bias">0.0</item>
     </style>
 
+    <style name="OCRTranslationSelector_items.leftSide" parent="OCRTranslationSelector_items">
+        <item name="layout_constraintEnd_toStartOf">@+id/line_verticalCenter</item>
+        <item name="layout_constraintStart_toStartOf">parent</item>
+    </style>
+
+    <style name="OCRTranslationSelector_items.rightSide" parent="OCRTranslationSelector_items">
+        <item name="layout_constraintStart_toEndOf">@+id/line_verticalCenter</item>
+        <item name="layout_constraintEnd_toEndOf">parent</item>
+    </style>
+
 </resources>
