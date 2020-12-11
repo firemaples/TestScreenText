@@ -6,8 +6,8 @@ import com.google.android.gms.common.GoogleApiAvailability
 import com.google.firebase.analytics.FirebaseAnalytics
 import com.google.firebase.crashlytics.FirebaseCrashlytics
 import tw.firemaples.onscreenocr.CoreApplication
-import tw.firemaples.onscreenocr.ocr.OCRFileUtil
-import tw.firemaples.onscreenocr.ocr.OCRLangUtil
+import tw.firemaples.onscreenocr.ocr.tesseract.OCRFileUtil
+import tw.firemaples.onscreenocr.ocr.tesseract.OCRLangUtil
 import tw.firemaples.onscreenocr.translate.TranslationUtil
 import java.util.*
 
