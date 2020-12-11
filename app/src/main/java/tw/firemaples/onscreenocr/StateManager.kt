@@ -1,14 +1,13 @@
 package tw.firemaples.onscreenocr
 
-import android.graphics.Bitmap
 import android.graphics.Rect
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import tw.firemaples.onscreenocr.event.EventUtil
-import tw.firemaples.onscreenocr.ocr.OCRLangUtil
-import tw.firemaples.onscreenocr.ocr.OcrResult
+import tw.firemaples.onscreenocr.ocr.tesseract.OCRLangUtil
+import tw.firemaples.onscreenocr.ocr.tesseract.OcrResult
 import tw.firemaples.onscreenocr.state.InitState
 import tw.firemaples.onscreenocr.state.State
 import tw.firemaples.onscreenocr.state.event.StateChangedEvent
@@ -17,7 +16,6 @@ import tw.firemaples.onscreenocr.translate.TranslationUtil
 import tw.firemaples.onscreenocr.utils.ImageFile
 import tw.firemaples.onscreenocr.utils.stateManagerAction
 import tw.firemaples.onscreenocr.utils.threadUI
-import java.io.File
 import java.util.*
 
 object StateManager {

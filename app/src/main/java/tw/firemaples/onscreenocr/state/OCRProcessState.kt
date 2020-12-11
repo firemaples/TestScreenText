@@ -4,8 +4,8 @@ import android.graphics.Rect
 import tw.firemaples.onscreenocr.StateManager
 import tw.firemaples.onscreenocr.StateName
 import tw.firemaples.onscreenocr.log.FirebaseEvent
-import tw.firemaples.onscreenocr.ocr.OCRManager
-import tw.firemaples.onscreenocr.ocr.OcrResult
+import tw.firemaples.onscreenocr.ocr.tesseract.TesseractOCRManager
+import tw.firemaples.onscreenocr.ocr.tesseract.OcrResult
 import tw.firemaples.onscreenocr.translate.TranslationService
 import tw.firemaples.onscreenocr.translate.TranslationUtil
 import tw.firemaples.onscreenocr.utils.SettingUtil
@@ -21,7 +21,7 @@ object OCRProcessState : OverlayState() {
 
         manager.dispatchStartOCR()
 
-        OCRManager.setListener(callback)
+        TesseractOCRManager.setListener(callback)
 
         manager.ocrResultList.clear()
         for (rect in manager.boxList) {
@@ -33,10 +33,10 @@ object OCRProcessState : OverlayState() {
             manager.ocrResultList.add(ocrResult)
         }
 
-        OCRManager.start(manager.screenshotFile!!, manager.boxList)
+        TesseractOCRManager.start(manager.screenshotFile!!, manager.boxList)
     }
 
-    val callback = object : OCRManager.OnOCRStateChangedListener {
+    val callback = object : TesseractOCRManager.OnOCRStateChangedListener {
         override fun onInitializing() {
             FirebaseEvent.logStartOCRInitializing()
             manager?.dispatchStartOCRInitializing()
