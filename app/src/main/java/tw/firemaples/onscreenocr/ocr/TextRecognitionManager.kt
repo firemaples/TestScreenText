@@ -5,7 +5,6 @@ import android.graphics.BitmapFactory
 import android.graphics.Rect
 import tw.firemaples.onscreenocr.ocr.tesseract.OcrResult
 import tw.firemaples.onscreenocr.utils.ImageFile
-import java.io.File
 
 object TextRecognitionManager {
     fun recognize(imageFile: ImageFile, rect: Rect) {
@@ -16,7 +15,7 @@ object TextRecognitionManager {
     }
 
     interface ITextRecognitionEngine {
-        fun recognize(bitmap: Bitmap)
+        fun recognize(bitmap: Bitmap, lang: String, callback: TextRecognitionCallback)
     }
 
     interface TextRecognitionCallback {
