@@ -25,7 +25,7 @@ object StateManager {
 
     var listener: OnStateChangedListener? = null
 
-    var boxList: MutableList<Rect> = arrayListOf()
+    var userSelectedAreaBoxList: MutableList<Rect> = arrayListOf()
     var screenshotFile: ImageFile? = null
     var ocrResultList: MutableList<OcrResult> = ArrayList()
     var ocrResultText: String?
@@ -47,7 +47,7 @@ object StateManager {
     }
 
     fun clear() {
-        boxList.clear()
+        userSelectedAreaBoxList.clear()
         screenshotFile = null
         ocrResultList.clear()
     }
@@ -74,7 +74,7 @@ object StateManager {
     }
 
     fun areaSelected(boxList: List<Rect>) = doAction {
-        this@StateManager.boxList = boxList.toMutableList()
+        this@StateManager.userSelectedAreaBoxList = boxList.toMutableList()
         state.areaSelected(this@StateManager)
     }
 
