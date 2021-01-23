@@ -4,6 +4,8 @@ import android.graphics.Rect
 import tw.firemaples.onscreenocr.StateManager
 import tw.firemaples.onscreenocr.StateName
 import tw.firemaples.onscreenocr.log.FirebaseEvent
+import tw.firemaples.onscreenocr.ocr.TextRecognitionManager
+import tw.firemaples.onscreenocr.ocr.tesseract.OCRLangUtil
 import tw.firemaples.onscreenocr.ocr.tesseract.TesseractOCRManager
 import tw.firemaples.onscreenocr.ocr.tesseract.OcrResult
 import tw.firemaples.onscreenocr.translate.TranslationService
@@ -24,7 +26,7 @@ object OCRProcessState : OverlayState() {
         TesseractOCRManager.setListener(callback)
 
         manager.ocrResultList.clear()
-        for (rect in manager.boxList) {
+        for (rect in manager.userSelectedAreaBoxList) {
             val ocrResult = OcrResult()
             ocrResult.rect = rect
             val rectList = ArrayList<Rect>()
@@ -33,7 +35,22 @@ object OCRProcessState : OverlayState() {
             manager.ocrResultList.add(ocrResult)
         }
 
-        TesseractOCRManager.start(manager.screenshotFile!!, manager.boxList)
+//        TesseractOCRManager.start(manager.screenshotFile!!, manager.boxList)
+
+        val screenshot = manager.screenshotFile!!
+        val userSelectedAreaBox = manager.userSelectedAreaBoxList.first()
+
+        TextRecognitionManager.recognize(
+                imageFile = screenshot.file,
+                userSelectedRect = userSelectedAreaBox,
+                lang = OCRLangUtil.selectedLangCode,
+                onSuccess = { text, textBoxes ->
+
+                },
+                onFailed = {
+
+                }
+        )
     }
 
     val callback = object : TesseractOCRManager.OnOCRStateChangedListener {

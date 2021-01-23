@@ -161,7 +161,7 @@ class MainBar(context: Context) : MovableFloatingView(context), RealButtonHandle
         fun doTranslation() {
             FirebaseEvent.logClickTranslationStartButton()
             if (SettingUtil.isRememberLastSelection) {
-                SettingUtil.lastSelectionArea = StateManager.boxList
+                SettingUtil.lastSelectionArea = StateManager.userSelectedAreaBoxList
             }
             if (TranslationUtil.currentService == TranslationService.GoogleTranslatorApp &&
                     !GoogleTranslateUtil.checkInstalled(context)) {

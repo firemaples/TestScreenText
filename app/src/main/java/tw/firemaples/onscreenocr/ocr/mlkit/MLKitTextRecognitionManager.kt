@@ -1,6 +1,29 @@
 package tw.firemaples.onscreenocr.ocr.mlkit
 
-object MLKitTextRecognitionManager {
-    fun recognize() {}
+import android.graphics.Bitmap
+import android.graphics.Rect
+import com.google.mlkit.vision.common.InputImage
+import com.google.mlkit.vision.text.TextRecognition
+import com.google.mlkit.vision.text.TextRecognizer
+import com.google.mlkit.vision.text.TextRecognizerOptions
+import tw.firemaples.onscreenocr.ocr.TextRecognitionManager
 
+object MLKitTextRecognitionManager : TextRecognitionManager.ITextRecognitionEngine {
+    private val recognizer: TextRecognizer by lazy {
+        val options = TextRecognizerOptions.Builder().build()
+        TextRecognition.getClient(options)
+    }
+
+    override fun recognize(croppedBitmap: Bitmap, lang: String, failed: ((Throwable) -> Unit)?, success: (text: String, textBoxes: List<Rect>) -> Unit) {
+        val image = InputImage.fromBitmap(croppedBitmap, 0)
+
+        recognizer.process(image).addOnSuccessListener { result ->
+            val text = result.text
+            val textBoxes = result.textBlocks.mapNotNull { it.boundingBox }
+
+            success(text, textBoxes)
+        }.addOnFailureListener {
+            failed?.invoke(it)
+        }
+    }
 }
