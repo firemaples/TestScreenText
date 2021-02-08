@@ -3,6 +3,8 @@ package tw.firemaples.onscreenocr.ocr
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Rect
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import tw.firemaples.onscreenocr.log.FirebaseEvent
 import tw.firemaples.onscreenocr.ocr.mlkit.MLKitTextRecognitionManager
 import tw.firemaples.onscreenocr.ocr.tesseract.TesseractTextRecognitionEngine
@@ -11,6 +13,8 @@ import java.io.File
 import java.lang.Exception
 
 object TextRecognitionManager {
+    private val logger: Logger by lazy { LoggerFactory.getLogger(TextRecognitionManager::class.java) }
+
     private val latinBasedLanguages: List<String> = listOf()
 
     private fun getTextRecognitionEngine(lang: String): ITextRecognitionEngine =
@@ -31,12 +35,15 @@ object TextRecognitionManager {
                     lang = lang,
                     success = { text, textBoxes ->
                         croppedBitmap.recycle()
+                        logger.debug("Text recognition success, text: $text, textBoxes: $textBoxes")
                         onSuccess(text, textBoxes)
                     },
                     failed = { throwable ->
+                        logger.warn("Text recognition failed", throwable)
                         FirebaseEvent.logOCRFailed(engine = engine.javaClass.simpleName, throwable)
                         val fallback = getTextRecognitionEngineFallback(engine)
                         if (fallback != null) {
+                            logger.debug("Fall back to $fallback")
                             FirebaseEvent.logOCRFallback(from = engine.javaClass.simpleName,
                                     to = fallback.javaClass.simpleName)
                             fallback.recognize(
@@ -44,8 +51,10 @@ object TextRecognitionManager {
                                     lang = lang,
                                     success = { text, textBoxes ->
                                         croppedBitmap.recycle()
+                                        logger.debug("Text recognition success by fallback")
                                         onSuccess(text, textBoxes)
                                     }, failed = { t ->
+
                                 FirebaseEvent.logOCRFailed(engine = fallback.javaClass.simpleName, t)
                                 onFailed(t)
                             })
