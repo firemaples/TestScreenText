@@ -120,19 +120,23 @@ object FirebaseEvent {
         })
     }
 
-    fun logStartOCRInitializing() {
+    private fun engineBundle(engine: String): Bundle = Bundle().apply {
+        putString("recognition_engine", engine)
+    }
+
+    fun logStartOCRInitializing(engine: String) {
         PerformanceTracer.startTracing(TRACE_OCR_INITIALIZE)
-        logEvent(EVENT_START_OCR_INITIALIZING)
+        logEvent(EVENT_START_OCR_INITIALIZING, engineBundle(engine))
     }
 
-    fun logOCRInitialized() {
+    fun logOCRInitialized(engine: String) {
         PerformanceTracer.stopTracing(TRACE_OCR_INITIALIZE)
-        logEvent(EVENT_OCR_INITIALIZED)
+        logEvent(EVENT_OCR_INITIALIZED, engineBundle(engine))
     }
 
-    fun logStartOCR() {
+    fun logStartOCR(engine: String) {
         PerformanceTracer.startTracing(TRACE_OCR_PROCESS)
-        logEvent(EVENT_START_OCR)
+        logEvent(EVENT_START_OCR, engineBundle(engine))
     }
 
     fun logOCRFallback(from: String, to: String) {
@@ -144,15 +148,13 @@ object FirebaseEvent {
 
     fun logOCRFailed(engine: String, throwable: Throwable) {
         PerformanceTracer.stopTracing(TRACE_OCR_PROCESS)
-        logEvent(EVENT_OCR_FAILED, Bundle().apply {
-            putString("engine", engine)
-        })
+        logEvent(EVENT_OCR_FAILED, engineBundle(engine))
         logException(throwable)
     }
 
-    fun logOCRFinished() {
+    fun logOCRFinished(engine: String) {
         PerformanceTracer.stopTracing(TRACE_OCR_PROCESS)
-        logEvent(EVENT_OCR_FINISHED)
+        logEvent(EVENT_OCR_FINISHED, engineBundle(engine))
     }
 
     fun logStartTranslationText(text: String, _translateToLang: String, service: TranslationService?) {

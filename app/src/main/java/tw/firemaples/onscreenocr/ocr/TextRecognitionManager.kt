@@ -10,7 +10,6 @@ import tw.firemaples.onscreenocr.ocr.mlkit.MLKitTextRecognitionManager
 import tw.firemaples.onscreenocr.ocr.tesseract.TesseractTextRecognitionEngine
 import tw.firemaples.onscreenocr.utils.threadIO
 import java.io.File
-import java.lang.Exception
 
 object TextRecognitionManager {
     private val logger: Logger by lazy { LoggerFactory.getLogger(TextRecognitionManager::class.java) }
@@ -40,12 +39,12 @@ object TextRecognitionManager {
                     },
                     failed = { throwable ->
                         logger.warn("Text recognition failed", throwable)
-                        FirebaseEvent.logOCRFailed(engine = engine.javaClass.simpleName, throwable)
+                        FirebaseEvent.logOCRFailed(engine = engine.name, throwable)
                         val fallback = getTextRecognitionEngineFallback(engine)
                         if (fallback != null) {
                             logger.debug("Fall back to $fallback")
-                            FirebaseEvent.logOCRFallback(from = engine.javaClass.simpleName,
-                                    to = fallback.javaClass.simpleName)
+                            FirebaseEvent.logOCRFallback(from = engine.name,
+                                    to = fallback.name)
                             fallback.recognize(
                                     croppedBitmap = croppedBitmap,
                                     lang = lang,
@@ -54,8 +53,8 @@ object TextRecognitionManager {
                                         logger.debug("Text recognition success by fallback")
                                         onSuccess(text, textBoxes)
                                     }, failed = { t ->
-
-                                FirebaseEvent.logOCRFailed(engine = fallback.javaClass.simpleName, t)
+                                logger.warn("Text recognition failed by fallback", t)
+                                FirebaseEvent.logOCRFailed(engine = fallback.name, t)
                                 onFailed(t)
                             })
                         } else {
@@ -68,7 +67,15 @@ object TextRecognitionManager {
     }
 
     interface ITextRecognitionEngine {
+        val type: RecognitionEngine
+        val name: String
+            get() = type.name
+
         fun recognize(croppedBitmap: Bitmap, lang: String, failed: ((Throwable) -> Unit)? = null, success: (text: String, textBoxes: List<Rect>) -> Unit)
+    }
+
+    enum class RecognitionEngine {
+        MLKitTextRecognition, TesseractOCR
     }
 
 //    interface TextRecognitionCallback {
