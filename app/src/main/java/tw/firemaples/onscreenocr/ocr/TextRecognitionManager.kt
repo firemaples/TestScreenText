@@ -14,7 +14,7 @@ import java.io.File
 object TextRecognitionManager {
     private val logger: Logger by lazy { LoggerFactory.getLogger(TextRecognitionManager::class.java) }
 
-    private val latinBasedLanguages: List<String> = listOf()
+    private val latinBasedLanguages: List<String> = listOf("eng")
 
     private fun getTextRecognitionEngine(lang: String): ITextRecognitionEngine =
             if (latinBasedLanguages.contains(lang)) MLKitTextRecognitionManager
@@ -29,6 +29,7 @@ object TextRecognitionManager {
             val croppedBitmap = Bitmap.createBitmap(fullBitmap, userSelectedRect.left, userSelectedRect.top, userSelectedRect.width(), userSelectedRect.height())
             fullBitmap.recycle()
             val engine = getTextRecognitionEngine(lang)
+            logger.debug("Start text recognition with engine: ${engine.name}")
             engine.recognize(
                     croppedBitmap = croppedBitmap,
                     lang = lang,

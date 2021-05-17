@@ -23,7 +23,7 @@ object OCRProcessState : OverlayState() {
 
         manager.dispatchStartOCR()
 
-        TesseractOCRManager.setListener(callback)
+//        TesseractOCRManager.setListener(callback)
 
         manager.ocrResultList.clear()
         for (rect in manager.userSelectedAreaBoxList) {
@@ -41,38 +41,38 @@ object OCRProcessState : OverlayState() {
         val userSelectedAreaBox = manager.userSelectedAreaBoxList.first()
 
         TextRecognitionManager.recognize(
-                imageFile = screenshot.file,
-                userSelectedRect = userSelectedAreaBox,
-                lang = OCRLangUtil.selectedLangCode,
-                onSuccess = { text, textBoxes ->
+            imageFile = screenshot.file,
+            userSelectedRect = userSelectedAreaBox,
+            lang = OCRLangUtil.selectedLangCode,
+            onSuccess = { text, textBoxes ->
 
-                },
-                onFailed = {
+            },
+            onFailed = {
 
-                }
+            }
         )
     }
 
-    val callback = object : TesseractOCRManager.OnOCRStateChangedListener {
-        override fun onInitializing() {
-            FirebaseEvent.logStartOCRInitializing()
-            manager?.dispatchStartOCRInitializing()
-        }
-
-        override fun onInitialized() {
-            FirebaseEvent.logOCRInitialized()
-        }
-
-        override fun onRecognizing() {
-            FirebaseEvent.logStartOCR()
-            manager?.dispatchStartOCRRecognizing()
-        }
-
-        override fun onRecognized(results: List<OcrResult>) {
-            FirebaseEvent.logOCRFinished()
-            this@OCRProcessState.onRecognized(results)
-        }
-    }
+//    val callback = object : TesseractOCRManager.OnOCRStateChangedListener {
+//        override fun onInitializing() {
+//            FirebaseEvent.logStartOCRInitializing()
+//            manager?.dispatchStartOCRInitializing()
+//        }
+//
+//        override fun onInitialized() {
+//            FirebaseEvent.logOCRInitialized()
+//        }
+//
+//        override fun onRecognizing() {
+//            FirebaseEvent.logStartOCR()
+//            manager?.dispatchStartOCRRecognizing()
+//        }
+//
+//        override fun onRecognized(results: List<OcrResult>) {
+//            FirebaseEvent.logOCRFinished()
+//            this@OCRProcessState.onRecognized(results)
+//        }
+//    }
 
     fun onRecognized(results: List<OcrResult>) {
         manager?.ocrResultList?.apply {
@@ -81,7 +81,8 @@ object OCRProcessState : OverlayState() {
 
             if (results.any { !it.text.isNullOrBlank() } && SettingUtil.autoCopyOCRResult) {
                 Utils.copyToClipboard(Utils.LABEL_OCR_RESULT,
-                        results.first { !it.text.isNullOrBlank() }.text)
+                    results.first { !it.text.isNullOrBlank() }.text
+                )
             }
 
             manager?.apply {
