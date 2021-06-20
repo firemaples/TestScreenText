@@ -8,6 +8,7 @@ import android.view.View
 import androidx.activity.result.contract.ActivityResultContracts
 import tw.firemaples.onscreenocr.R
 import tw.firemaples.onscreenocr.screenshot.ScreenshotManager
+import tw.firemaples.onscreenocr.floatingviews.ViewHolderService
 import tw.firemaples.onscreenocr.ui.BaseFragment
 import kotlin.reflect.KClass
 
@@ -43,6 +44,7 @@ class PermissionCaptureScreenFragment : BaseFragment<PermissionCaptureScreenView
     }
 
     private fun startService() {
-
+        ViewHolderService.showViews(requireActivity())
+        requireActivity().finishAffinity()
     }
 }
