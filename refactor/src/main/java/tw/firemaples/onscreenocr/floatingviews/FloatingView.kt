@@ -63,7 +63,7 @@ abstract class FloatingView(private val context: Context) {
     private var attached: Boolean = false
 
     @MainThread
-    fun attachToWindow() {
+    fun attachToScreen() {
         if (attached) return
         if (!PermissionUtil.canDrawOverlays(context)) {
             logger.warn("You should obtain the draw overlays permission first!")
@@ -78,5 +78,9 @@ abstract class FloatingView(private val context: Context) {
         attached = true
     }
 
+    @MainThread
+    fun detachFromScreen() {
+        
+    }
 
 }
