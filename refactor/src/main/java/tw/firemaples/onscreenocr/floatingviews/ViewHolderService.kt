@@ -14,11 +14,15 @@ class ViewHolderService : Service() {
         private val logger: Logger = Logger(ViewHolderService::class)
 
         fun showViews(context: Context) {
-            context.startService(Intent(context, ViewHolderService::class.java).apply { action = ACTION_SHOW_VIEWS })
+            context.startService(Intent(context, ViewHolderService::class.java).apply {
+                action = ACTION_SHOW_VIEWS
+            })
         }
 
         fun hideViews(context: Context) {
-            context.startService(Intent(context, ViewHolderService::class.java).apply { action = ACTION_HIDE_VIEWS })
+            context.startService(Intent(context, ViewHolderService::class.java).apply {
+                action = ACTION_HIDE_VIEWS
+            })
         }
     }
 

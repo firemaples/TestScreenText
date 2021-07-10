@@ -3,11 +3,18 @@ package tw.firemaples.onscreenocr.floatingviews
 import android.content.Context
 import android.graphics.PixelFormat
 import android.os.Build
+import android.os.Looper
 import android.view.Gravity
+import android.view.LayoutInflater
+import android.view.ViewGroup
 import android.view.WindowManager
+import androidx.annotation.MainThread
 import tw.firemaples.onscreenocr.utils.Logger
+import tw.firemaples.onscreenocr.utils.PermissionUtil
+import tw.firemaples.onscreenocr.wigets.BackButtonTrackerView
 
 abstract class FloatingView(private val context: Context) {
+
     private val logger: Logger by lazy { Logger(this::class) }
 
     private val windowManager: WindowManager by lazy { context.getSystemService(Context.WINDOW_SERVICE) as WindowManager }
@@ -33,9 +40,43 @@ abstract class FloatingView(private val context: Context) {
         if (fullscreenMode)
             flags = flags or WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN
 
-        WindowManager.LayoutParams(layoutWidth, layoutHeight, type, flags, PixelFormat.TRANSLUCENT).apply {
-            gravity = layoutGravity
+        WindowManager.LayoutParams(layoutWidth, layoutHeight, type, flags, PixelFormat.TRANSLUCENT)
+            .apply {
+                gravity = layoutGravity
+            }
+    }
+
+    abstract val layoutId: Int
+    private val rootView: BackButtonTrackerView by lazy {
+        BackButtonTrackerView(context).apply {
+            val innerView = LayoutInflater.from(context).inflate(layoutId, null)
+            addView(
+                innerView,
+                ViewGroup.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.MATCH_PARENT
+                )
+            )
         }
     }
+
+    private var attached: Boolean = false
+
+    @MainThread
+    fun attachToWindow() {
+        if (attached) return
+        if (!PermissionUtil.canDrawOverlays(context)) {
+            logger.warn("You should obtain the draw overlays permission first!")
+            return
+        }
+        if (Looper.myLooper() != Looper.getMainLooper()) {
+            logger.warn("attachToWindow() should be called in main thread")
+            return
+        }
+
+        windowManager.addView(rootView, params)
+        attached = true
+    }
+
 
 }
