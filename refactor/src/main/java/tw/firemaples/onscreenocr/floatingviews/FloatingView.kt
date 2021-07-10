@@ -8,10 +8,12 @@ import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import android.view.WindowManager
+import androidx.annotation.CallSuper
 import androidx.annotation.MainThread
 import tw.firemaples.onscreenocr.utils.Logger
 import tw.firemaples.onscreenocr.utils.PermissionUtil
 import tw.firemaples.onscreenocr.wigets.BackButtonTrackerView
+import tw.firemaples.onscreenocr.wigets.HomeButtonWatcher
 
 abstract class FloatingView(private val context: Context) {
 
@@ -25,6 +27,7 @@ abstract class FloatingView(private val context: Context) {
     open val layoutCanMoveOutsideScreen: Boolean = false
     open val fullscreenMode: Boolean = false
     open val layoutGravity: Int = Gravity.TOP or Gravity.LEFT
+    open val enableHomeButtonWatcher: Boolean = false
 
     private val params: WindowManager.LayoutParams by lazy {
         val type =
@@ -46,9 +49,19 @@ abstract class FloatingView(private val context: Context) {
             }
     }
 
+    private val homeButtonWatcher: HomeButtonWatcher by lazy {
+        HomeButtonWatcher(
+            context = context,
+            onHomeButtonPressed = { onHomeButtonPressed() },
+            onHomeButtonLongPressed = { onHomeButtonLongPressed() },
+        )
+    }
+
     abstract val layoutId: Int
     private val rootView: BackButtonTrackerView by lazy {
-        BackButtonTrackerView(context).apply {
+        BackButtonTrackerView(
+            context = context,
+            onAttachedToWindow = { onAttachedToScreen() }).apply {
             val innerView = LayoutInflater.from(context).inflate(layoutId, null)
             addView(
                 innerView,
@@ -80,7 +93,21 @@ abstract class FloatingView(private val context: Context) {
 
     @MainThread
     fun detachFromScreen() {
-        
+
     }
 
+    @CallSuper
+    open fun onAttachedToScreen() {
+        if (enableHomeButtonWatcher) {
+            homeButtonWatcher.startWatch()
+        }
+    }
+
+    open fun onHomeButtonPressed() {
+
+    }
+
+    open fun onHomeButtonLongPressed() {
+
+    }
 }

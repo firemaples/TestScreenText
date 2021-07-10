@@ -6,11 +6,10 @@ import android.view.KeyEvent
 import android.widget.FrameLayout
 
 open class BackButtonTrackerView @JvmOverloads constructor(
-    context: Context, attrs: AttributeSet? = null
+    context: Context, attrs: AttributeSet? = null,
+    var onAttachedToWindow: (() -> Unit)? = null,
+    var onBackButtonPressed: (() -> Boolean)? = null,
 ) : FrameLayout(context, attrs) {
-
-    var onAttachedToWindow: (() -> Unit)? = null
-    var onBackButtonPressed: (() -> Boolean)? = null
 
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
