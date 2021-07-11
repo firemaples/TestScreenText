@@ -10,10 +10,16 @@ import android.view.ViewGroup
 import android.view.WindowManager
 import androidx.annotation.CallSuper
 import androidx.annotation.MainThread
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import tw.firemaples.onscreenocr.utils.Logger
 import tw.firemaples.onscreenocr.utils.PermissionUtil
 import tw.firemaples.onscreenocr.wigets.BackButtonTrackerView
 import tw.firemaples.onscreenocr.wigets.HomeButtonWatcher
+import java.io.Closeable
+import kotlin.coroutines.CoroutineContext
 
 abstract class FloatingView(private val context: Context) {
 
@@ -93,7 +99,20 @@ abstract class FloatingView(private val context: Context) {
 
     @MainThread
     fun detachFromScreen() {
+        if (!attached) return
+        if (Looper.myLooper() != Looper.getMainLooper()) {
+            logger.warn("attachToWindow() should be called in main thread")
+            return
+        }
 
+        if (enableHomeButtonWatcher) {
+            homeButtonWatcher.stopWatch()
+        }
+
+        viewScope.cancel()
+
+        windowManager.removeView(rootView)
+        attached = false
     }
 
     @CallSuper
@@ -103,11 +122,36 @@ abstract class FloatingView(private val context: Context) {
         }
     }
 
+    fun updateViewLayout() {
+        try {
+            windowManager.updateViewLayout(rootView, params)
+        } catch (e: Exception) {
+            logger.warn(t = e)
+        }
+    }
+
     open fun onHomeButtonPressed() {
 
     }
 
     open fun onHomeButtonLongPressed() {
 
+    }
+
+//    private val tasks = mutableListOf<WeakReference<Closeable>>()
+
+    protected val viewScope: CoroutineScope by lazy {
+        FloatingViewCoroutineScope(SupervisorJob() + Dispatchers.Main.immediate).apply {
+//            tasks.add(WeakReference(this))
+        }
+    }
+
+    private class FloatingViewCoroutineScope(context: CoroutineContext) :
+        Closeable, CoroutineScope {
+        override val coroutineContext: CoroutineContext = context
+
+        override fun close() {
+            coroutineContext.cancel()
+        }
     }
 }
